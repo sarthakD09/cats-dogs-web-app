@@ -13,10 +13,24 @@ export const CameraComponent = () => {
 
   useEffect(() => {
     startCamera()
-  }, [])
+
+    return () => {
+      if (videoRef.current && videoRef.current.srcObject) {
+        const tracks = (videoRef.current.srcObject as MediaStream).getTracks()
+        tracks.forEach((t) => t.stop())
+        videoRef.current.srcObject = null
+      }
+    }
+  }, [useRear])
 
   const startCamera = async () => {
   try {
+    // stop any existing stream before starting a new one
+    if (videoRef.current && videoRef.current.srcObject) {
+      const oldTracks = (videoRef.current.srcObject as MediaStream).getTracks()
+      oldTracks.forEach((t) => t.stop())
+      videoRef.current.srcObject = null
+    }
     const stream = await navigator.mediaDevices.getUserMedia({
       video: {
       facingMode: useRear ? { exact: 'environment' } : 'user'
@@ -26,6 +40,11 @@ export const CameraComponent = () => {
 
     if (videoRef.current) {
       videoRef.current.srcObject = stream
+      try {
+        await videoRef.current.play()
+      } catch (e) {
+        // ignore play errors
+      }
     }
   } catch (err) {
     console.error('Camera error:', err)
@@ -34,6 +53,11 @@ export const CameraComponent = () => {
     const stream = await navigator.mediaDevices.getUserMedia({ video: true })
     if (videoRef.current) {
       videoRef.current.srcObject = stream
+      try {
+        await videoRef.current.play()
+      } catch (e) {
+        // ignore
+      }
     }
   }
 }
@@ -88,7 +112,7 @@ export const CameraComponent = () => {
       >
         Capture & Predict
       </button>
-      <button onClick={() => setUseRear(!useRear)} 
+      <button type="button" onClick={() => setUseRear((prev) => !prev)} 
         className="px-4 py-2 bg-blue-600 text-white rounded flex items-center gap-2">
        Switch Camera
       </button>
