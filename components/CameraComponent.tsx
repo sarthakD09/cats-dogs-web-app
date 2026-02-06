@@ -8,21 +8,36 @@ export const CameraComponent = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [prediction, setPrediction] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [useRear, setUseRear] = useState(true)
+
 
   useEffect(() => {
     startCamera()
   }, [])
 
   const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true })
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+      facingMode: useRear ? { exact: 'environment' } : 'user'
       }
-    } catch (err) {
-      console.error('Camera error:', err)
+
+    })
+
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream
+    }
+  } catch (err) {
+    console.error('Camera error:', err)
+
+    // fallback if exact fails
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true })
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream
     }
   }
+}
+
 
   const captureAndPredict = async () => {
     if (!videoRef.current || !canvasRef.current) return
@@ -69,10 +84,15 @@ export const CameraComponent = () => {
 
       <button
         onClick={captureAndPredict}
-        className="px-4 py-2 bg-blue-600 text-white rounded"
+        className="px-4 py-2 bg-blue-600 text-white rounded flex items-center gap-2"
       >
         Capture & Predict
       </button>
+      <button onClick={() => setUseRear(!useRear)} 
+        className="px-4 py-2 bg-blue-600 text-white rounded flex items-center gap-2">
+       Switch Camera
+      </button>
+
 
       {loading && <p>Predicting...</p>}
       {prediction && <h2 className="text-xl font-bold">{prediction}</h2>}
